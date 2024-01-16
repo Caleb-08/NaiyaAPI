@@ -1,0 +1,57 @@
+name: Node.js App Deployment
+
+on:
+  push:
+    branches:
+      - uat  # Change this to your default branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '18'  # Change to your desired Node.js version
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build App
+        run: npm run build  # If applicable, replace with your build command
+
+      - name: Copying Files to Server
+        run: |
+          # Use scp to copy files to the VPS
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ssh_key
+          chmod 600 ssh_key
+          ls
+          scp -i ssh_key -P 22 -o StrictHostKeyChecking=no -r dist/* ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:/projects/api.naiya.ng
+          scp -i ssh_key -P 22 -o StrictHostKeyChecking=no -r prisma/* ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:/projects/api.naiya.ng
+          scp -i ssh_key -P 22 -o StrictHostKeyChecking=no -r package.json ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }}:/projects/api.naiya.ng
+          rm -r ssh_key
+          ls
+
+      - name: Running Post Deployment Scripts
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.VPS_HOST }}  # Add this secret in your repository settings
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            cd /projects/api.naiya.ng
+            npm install --omit=dev  # Install only production dependencies
+            npx prisma generate
+            if ! pm2 describe APIs &> /dev/null; then
+              pm2 start main.js --name APIs
+            else
+              pm2 restart APIs
+            fi
+
+
+

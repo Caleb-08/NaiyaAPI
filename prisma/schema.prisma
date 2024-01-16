@@ -1,0 +1,302 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String             @id @default(auto()) @map("_id") @db.ObjectId
+  email         String             @unique
+  phoneNumber   String?            @unique
+  name          String
+  password      String
+  refreshToken  String?
+  avatar        String?            @default("https://aui.atlassian.com/aui/9.3/docs/images/avatar-person.svg")
+  store         Store[]
+  recentlyview  RecentlyViewedAd[]
+  Conversations Conversations[]
+  reportStore   ReportStore[]
+  review        Review[]
+  followStore   FollowStore[]
+  itFavorite    String[]
+  isUserBan     Boolean            @default(false)
+  isAdmin       Boolean            @default(false)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+}
+
+model Categories {
+  id            String          @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  slug          String?
+  thumbnail     String
+  count         Int?
+  Store         Store[]
+  subCategories SubCategories[]
+  updatedAt     DateTime        @default(now())
+  createdAt     DateTime        @updatedAt
+}
+
+model SubCategories {
+  id         String     @id @default(auto()) @map("_id") @db.ObjectId
+  name       String
+  slug       String?
+  thumbnail  String
+  count      Int?
+  Ads        Ads[]
+  fields     Json[]
+  category   Categories @relation(fields: [categoryId], references: [id])
+  categoryId String     @db.ObjectId
+  updatedAt  DateTime   @default(now())
+  createdAt  DateTime   @updatedAt
+}
+
+model State {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  slug      String   @unique
+  count     Int?
+  cities    Cities[]
+  updatedAt DateTime @default(now())
+  createdAt DateTime @updatedAt
+}
+
+model Cities {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  slug      String   @unique
+  count     Int?
+  Ads       Ads[]
+  state     State    @relation(fields: [stateId], references: [id])
+  stateId   String   @db.ObjectId
+  updatedAt DateTime @default(now())
+  createdAt DateTime @updatedAt
+}
+
+model Store {
+  id                 String          @id @default(auto()) @map("_id") @db.ObjectId
+  name               String
+  slug               String          @unique
+  phoneNumber        String
+  email              String
+  ads                Ads[]
+  logo               String?
+  banner             String?
+  video              String?
+  description        String?
+  state              String?
+  city               String?
+  storeAddress       String?
+  facebook           String?
+  messenger          String?
+  instagram          String?
+  whatsApp           String?
+  telegram           String?
+  externalURL        String?
+  openingHour        String?
+  closingHour        String?
+  review             Review[]
+  followStore        FollowStore[]
+  reportStore        ReportStore[]
+  workingDays        String[]        @default([])
+  deliverTo          String[]        @default([])
+  Analytics          Analytics[]
+  Conversations      Conversations[]
+  isDisabled         Boolean         @default(false)
+  category           Categories      @relation(fields: [categoryId], references: [id])
+  categoryId         String          @db.ObjectId
+  user               User            @relation(fields: [userId], references: [id])
+  userId             String          @db.ObjectId
+  deactivatedByAdmin Boolean         @default(false)
+  updatedAt          DateTime        @updatedAt
+  createdAt          DateTime        @default(now())
+}
+
+type Image {
+  url         String
+  title       String?
+  description String?
+  position    Int?
+}
+
+model Ads {
+  id                String             @id @default(auto()) @map("_id") @db.ObjectId
+  title             String
+  slug              String?            @unique
+  description       String
+  price             Float
+  priceHistory      Json[]             @default([])
+  images            Image[]
+  video             String?
+  adData            Json?
+  review            Review[]
+  recentlyviewedAds RecentlyViewedAd[]
+  isPublished       Boolean            @default(false)
+  views             Int                @default(0)
+  Analytics         Analytics[]
+  subCategory       SubCategories      @relation(fields: [subCategoryId], references: [id])
+  subCategoryId     String             @db.ObjectId
+  city              Cities             @relation(fields: [cityId], references: [id])
+  cityId            String             @db.ObjectId
+  store             Store              @relation(fields: [storeId], references: [id])
+  storeId           String             @db.ObjectId
+  updatedAt         DateTime           @updatedAt
+  createdAt         DateTime           @default(now())
+}
+
+// Conversation and Messaging Model Start
+model Conversations {
+  id           String     @id @default(auto()) @map("_id") @db.ObjectId
+  isArchived   Boolean    @default(false)
+  isSpam       Boolean    @default(false)
+  markedAsRead Boolean    @default(false)
+  lastMessage  String?
+  Messages     Messages[]
+  user         User       @relation(fields: [userId], references: [id])
+  userId       String     @db.ObjectId
+  store        Store      @relation(fields: [storeId], references: [id])
+  storeId      String     @db.ObjectId
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+enum MessageType {
+  Text
+  Audio
+  Image
+  Ad
+  Sticker
+  Gif
+  Emoji
+  Document
+}
+
+enum MessageSender {
+  User
+  Store
+}
+
+model Messages {
+  id             String        @id @default(auto()) @map("_id") @db.ObjectId
+  messageType    MessageType
+  text           String?
+  media          Json[]        @default([])
+  sender         MessageSender
+  senderId       String        @db.ObjectId
+  dateSeen       DateTime?
+  conversation   Conversations @relation(fields: [conversationId], references: [id])
+  conversationId String        @db.ObjectId
+  createdAt      DateTime      @default(now())
+}
+
+// Conversation and Messaging Model Ends
+
+model Brand {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String   @unique
+  logoUrl   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Model {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Story {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  thumbnail   String
+  title       String
+  stories     Json[]
+  isPublished Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Review {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  comment   String
+  rating    Int
+  avatar    String   @default("https://cdn-icons-png.flaticon.com/128/3135/3135715.png")
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String   @db.ObjectId
+  store     Store    @relation(fields: [storeId], references: [id])
+  storeId   String   @db.ObjectId
+  ad        Ads      @relation(fields: [adSlug], references: [slug])
+  adSlug    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum AnalyticsType {
+  AdView
+  ViewPhonenumber
+}
+
+model Analytics {
+  id        String        @id @default(auto()) @map("_id") @db.ObjectId
+  type      AnalyticsType
+  otherData Json?
+  ad        Ads?          @relation(fields: [adId], references: [id])
+  adId      String?       @db.ObjectId
+  store     Store?        @relation(fields: [storeId], references: [id])
+  storeId   String?       @db.ObjectId
+  createdAt DateTime      @default(now())
+}
+
+model RecentlyViewedAd {
+  id       String   @id @default(auto()) @map("_id") @db.ObjectId
+  ad       Ads      @relation(fields: [adId], references: [id])
+  adId     String   @db.ObjectId
+  user     User     @relation(fields: [userId], references: [id])
+  userId   String   @db.ObjectId
+  viewedAt DateTime @default(now())
+}
+
+model ComparedAds {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  compareUserId   String?
+  comparedAds     Json[]
+  comparedAdStore String[]
+  createdAt       DateTime @default(now())
+}
+
+model ReportStore {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  reason       String
+  store        Store    @relation(fields: [storeId], references: [id])
+  storeId      String   @db.ObjectId
+  reportedBy   User     @relation(fields: [reportedById], references: [id])
+  reportedById String   @db.ObjectId
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model FollowStore {
+  id      String @id @default(auto()) @map("_id") @db.ObjectId
+  user    User   @relation(fields: [userId], references: [id])
+  userId  String @db.ObjectId
+  store   Store  @relation(fields: [storeId], references: [id])
+  storeId String @db.ObjectId
+
+  @@unique([userId, storeId])
+}
+
+model SearchedHistory {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  searchTerm  String   @unique
+  subCat      String?
+  searchCount Int      @default(1)
+  users       Json[]   @default([])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
