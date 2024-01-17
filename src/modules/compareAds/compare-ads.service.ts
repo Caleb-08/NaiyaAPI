@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { CompareAdsDto } from './dto/compare-ads.dto';
+import { CompareAdsDto } from './dto/compare-ads.dto'
 
 @Injectable()
 export class CompareAdsService {
